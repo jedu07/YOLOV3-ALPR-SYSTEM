@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 50px;
+            display: flex;
+        }
+        .sidebar {
+            width: 200px;
+            padding: 10px;
+            background-color: #f0f0f0;
+        }
+        .tabs {
+            margin-bottom: 10px;
+            margin-left: 0; /* Change to align tabs to the very outer left */
+        }
+        .tabs a {
+            display: block;
+            margin-bottom: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .tabs a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            flex: 1;
+            border: 10px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            background-color: #fff;
+            position: relative;
+        }
+        .parking-status {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            font-size: 16px;
+        }
+        .table-container {
+            overflow-x: auto;
+        }
+        .logout-button {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+        }
+        .add-plate-button {
+            position: absolute;
+            top: 90px;
+            right: 20px;
+        }
+        .search-container {
+            margin-top: 80px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="tabs" style="margin-left: 0;">
+            <a href="#dashboard" class="active">Dashboard</a> <!-- Moved Dashboard tab here -->
+            <a href="#registered">Registered Vehicles</a>
+            <!-- Add more tabs as needed -->
+        </div>
+        <div class="logout-button">
+            <a href="/logout" class="btn btn-danger">Logout</a> <!-- Added route to /logout -->
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="dashboard">
+            <div class="parking-status">
+                <p>Car Slot Status: <span id="car-slot-status">{{ car_slots }}</span></p>
+                <p>Motor Slot Status: <span id="motor-slot-status">{{ motor_slots }}</span></p>
+            </div>
+
+            <h3>Vehicle Entering Premises</h3>
+            <div class="search-container">
+                <!-- Search and show entries functions -->
+            </div>
+            <div class="table-container">
+                <table id="entering-premises-table" class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Plate Number</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in entries %}
+                        <tr>
+                            <td>{{ entry.owner_name }}</td>
+                            <td>{{ entry.plate_num }}</td>
+                            <td>{{ entry.date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="registered" style="display: none;">
+            <div class="header">
+                <h3>Registered Vehicles</h3>
+                <div class="search-container">
+                    <!-- Search function -->
+                </div>
+                <div class="add-plate-button">
+                    <a href="/registration" class="btn btn-success">Add New Plate Number</a> <!-- Added route to /registration -->
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="registered-table" class="table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Plate Number</th>
+                            <th>Vehicle Type</th>
+                            <th>Identity Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for plate in plates %}
+                        <tr>
+                            <td>{{ plate.name }}</td>
+                            <td>{{ plate.email }}</td>
+                            <td>{{ plate.num_plate }}</td>
+                            <td>{{ plate.type }}</td>
+                            <td>{{ plate.identity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#registered-table').DataTable();
+        $('#entering-premises-table').DataTable();
+
+        // Activate tab functionality
+        $('.tabs a').click(function() {
+            var tabId = $(this).attr('href');
+            $('.tabs a').removeClass('active');
+            $(this).addClass('active');
+            $('.content > div').hide();
+            $(tabId).show();
+            return false;
+        });
+    });
+</script>
+
+</body>
+</html>

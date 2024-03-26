@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .tabs a {
+            margin-left: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .tabs a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            background-color: #fff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .search-container {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Dashboard</h1>
+        <div class="tabs">
+            <a href="#">Registered</a>
+            <a href="#">Logout</a>
+        </div>
+    </div>
+    <div class="content">
+        <div class="search-container">
+            <form action="#" method="get">
+                <div class="form-row">
+                    <div class="col-md-4 mb-3">
+                        <label for="searchPlate">Search by Plate Number:</label>
+                        <input type="text" class="form-control" id="searchPlate" name="searchPlate" placeholder="Enter plate number">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="searchType">Search by Vehicle Type:</label>
+                        <select class="form-control" id="searchType" name="searchType">
+                            <option value="">Select type</option>
+                            <option value="car">Car</option>
+                            <option value="motorcycle">Motorcycle</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <button type="submit" class="btn btn-primary" style="margin-top: 32px;">Search</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <h3>List of Registered Vehicles</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Plate Number</th>
+                    <th>Vehicle Type</th>
+                    <th>Identity Type</th>
+                    <th>EDIT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if plates|length < 1 %}
+                <tr><td colspan="6"><em>No Registered Plate Numbers</em></td></tr>
+                {% else %}
+                    {% for plate in plates %}
+                    <tr>
+                        <td>{{ plate.name }}</td>
+                        <td>{{ plate.email }}</td>
+                        <td>{{ plate.num_plate }}</td>
+                        <td>{{ plate.type }}</td>
+                        <td>{{ plate.identity }}</td>
+                        <td>
+                            <form action="#" method="post">
+                                <button type="submit" class="btn btn-danger" name="plate_num" value="{{ plate.num_plate }}">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+        </table>
+        <br><br>
+        <a href="#" class="btn btn-success">Add New Plate Number</a>
+    </div>
+</div>
+
+</body>
+</html>

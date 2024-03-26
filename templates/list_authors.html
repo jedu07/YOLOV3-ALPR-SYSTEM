@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DASHBOARD</title>
+</head>
+<body>
+    <h3> <a href="{{url_for('list_authors')}}"> Manage Authors</a></h3>
+    <hr />
+    {% for message in get_flashed_messages() %}
+    {{ message }}
+    {% endfor %}
+
+
+    <h3> Author List</h3>
+
+    <table border = "2">
+
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>[password]</th>
+
+
+            </tr>
+        </thead>
+        <tb>
+            {% if authors|length < 1%}
+            <h4> No Authors</h4>
+            {% else %}
+                {% for authors in authors %}
+                <tr>
+                    <td>{{ authors.id}}</td>
+                    <td>{{ authors.userName}}</td>
+                    <td>{{ authors.password}}</td>
+
+                </tr>
+                {% endfor %}
+
+        </tb>
+    </table>
+    {% endif %}
+    <br><br>
+    <a href="{{url_for('add_authors')}}"> Add New Authors</a>
+</body>
+</html>
