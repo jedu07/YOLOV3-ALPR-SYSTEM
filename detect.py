@@ -1,7 +1,9 @@
 import os
+
 # comment out below line to enable tensorflow outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
+
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -16,6 +18,9 @@ import cv2
 import numpy as np
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
+import sys
+
+
 
 flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
 flags.DEFINE_string('weights', './checkpoints/yolov4-416',
@@ -33,6 +38,10 @@ flags.DEFINE_boolean('info', False, 'print info on detections')
 flags.DEFINE_boolean('crop', False, 'crop detections from images')
 flags.DEFINE_boolean('ocr', False, 'perform generic OCR on detection regions')
 flags.DEFINE_boolean('plate', False, 'perform license plate recognition')
+flags.DEFINE_boolean('database', False, 'database')
+
+# Define db_operation_flag
+
 
 def main(_argv):
     config = ConfigProto()
@@ -42,11 +51,15 @@ def main(_argv):
     input_size = FLAGS.size
     images = FLAGS.images
 
+    if FLAGS.database:
+        db_operation_flag = True
+    else:
+        db_operation_flag = False
     # load model
     if FLAGS.framework == 'tflite':
-            interpreter = tf.lite.Interpreter(model_path=FLAGS.weights)
+        interpreter = tf.lite.Interpreter(model_path=FLAGS.weights)
     else:
-            saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
+        saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
 
     # loop through images in list and run Yolov4 model on each
     for count, image_path in enumerate(images, 1):
@@ -55,7 +68,7 @@ def main(_argv):
 
         image_data = cv2.resize(original_image, (input_size, input_size))
         image_data = image_data / 255.
-        
+
         # get image name by using split method
         image_name = image_path.split('/')[-1]
         image_name = image_name.split('.')[0]
@@ -73,9 +86,11 @@ def main(_argv):
             interpreter.invoke()
             pred = [interpreter.get_tensor(output_details[i]['index']) for i in range(len(output_details))]
             if FLAGS.model == 'yolov3' and FLAGS.tiny == True:
-                boxes, pred_conf = filter_boxes(pred[1], pred[0], score_threshold=0.25, input_shape=tf.constant([input_size, input_size]))
+                boxes, pred_conf = filter_boxes(pred[1], pred[0], score_threshold=0.25,
+                                                input_shape=tf.constant([input_size, input_size]))
             else:
-                boxes, pred_conf = filter_boxes(pred[0], pred[1], score_threshold=0.25, input_shape=tf.constant([input_size, input_size]))
+                boxes, pred_conf = filter_boxes(pred[0], pred[1], score_threshold=0.25,
+                                                input_shape=tf.constant([input_size, input_size]))
         else:
             infer = saved_model_loaded.signatures['serving_default']
             batch_data = tf.constant(images_data)
@@ -98,7 +113,7 @@ def main(_argv):
         # format bounding boxes from normalized ymin, xmin, ymax, xmax ---> xmin, ymin, xmax, ymax
         original_h, original_w, _ = original_image.shape
         bboxes = utils.format_boxes(boxes.numpy()[0], original_h, original_w)
-        
+
         # hold all detection data in one variable
         pred_bbox = [bboxes, scores.numpy()[0], classes.numpy()[0], valid_detections.numpy()[0]]
 
@@ -107,9 +122,9 @@ def main(_argv):
 
         # by default allow all classes in .names file
         allowed_classes = list(class_names.values())
-        
+
         # custom allowed classes (uncomment line below to allow detections for only people)
-        #allowed_classes = ['person']
+        # allowed_classes = ['person']
 
         # if crop flag is enabled, crop each detection and save it as new image
         if FLAGS.crop:
@@ -127,19 +142,38 @@ def main(_argv):
         # if count flag is enabled, perform counting of objects
         if FLAGS.count:
             # count objects found
-            counted_classes = count_objects(pred_bbox, by_class = False, allowed_classes=allowed_classes)
+            counted_classes = count_objects(pred_bbox, by_class=False, allowed_classes=allowed_classes)
             # loop through dict and print
             for key, value in counted_classes.items():
                 print("Number of {}s: {}".format(key, value))
-            image = utils.draw_bbox(original_image, pred_bbox, FLAGS.info, counted_classes, allowed_classes=allowed_classes, read_plate = FLAGS.plate)
+
+            # Call recognize_plate if FLAGS.plate is True
+            if FLAGS.plate:
+                for bbox, score, class_idx, _ in zip(pred_bbox[0], pred_bbox[1], pred_bbox[2], range(pred_bbox[3])):
+                    # Check if the detected object is a license plate (assuming class_idx for license plate is 0)
+                    if class_idx == 0:
+                        # Get coordinates for cropping the detected plate
+                        ymin, xmin, ymax, xmax = bbox
+                        cropped_plate = original_image[int(ymin):int(ymax), int(xmin):int(xmax)]
+                        db = True
+                        # Recognize the plate
+                        plate_num = utils.recognize_plate(cropped_plate, [ymin, xmin, ymax, xmax], True)
+
+                        print(f"Detected plate number: {plate_num}")
+
+            image = utils.draw_bbox(original_image, pred_bbox, FLAGS.info, counted_classes,
+                                    allowed_classes=allowed_classes, read_plate=FLAGS.plate)
         else:
-            image = utils.draw_bbox(original_image, pred_bbox, FLAGS.info, allowed_classes=allowed_classes, read_plate = FLAGS.plate)
-        
+            image = utils.draw_bbox(original_image, pred_bbox, FLAGS.info, allowed_classes=allowed_classes,
+                                    read_plate=FLAGS.plate, db_operation_flag=db_operation_flag)
+
         image = Image.fromarray(image.astype(np.uint8))
+
         if not FLAGS.dont_show:
             image.show()
         image = cv2.cvtColor(np.array(image), cv2.COLOR_BGR2RGB)
         cv2.imwrite(FLAGS.output + 'detection' + str(count) + '.png', image)
+
 
 if __name__ == '__main__':
     try:

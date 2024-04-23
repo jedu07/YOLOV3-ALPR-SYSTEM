@@ -16,7 +16,9 @@ from app import VehicleDatabase, db, app, PlateRecognitionLog, ParkingProperties
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 # function to recognize license plate numbers using Tesseract OCR
-def recognize_plate(img, coords):
+def recognize_plate(img, coords, db_operation_flag):
+    # Function body
+
     # separate coordinates from box
     xmin, ymin, xmax, ymax = coords
     # get the subimage that makes up the bounded region and take an additional 5 pixels on each side
@@ -57,10 +59,6 @@ def recognize_plate(img, coords):
         # if height of box is not tall enough relative to total height then skip
         if height / float(h) > 6: continue
 
-        ratio = h / float(w)
-        # if height to width ratio is less than 1.5 skip
-        if ratio < 1.5: continue
-
         # if width is not wide enough relative to total width then skip
         if width / float(w) > 15: continue
 
@@ -81,22 +79,19 @@ def recognize_plate(img, coords):
             # clean tesseract text by removing any unwanted blank spaces
             clean_text = re.sub('[\W_]+', '', text)
             plate_num += clean_text
-        except: 
+        except:
             text = None
-    if plate_num != None:
+
+        # Keep only the first 7 characters to match the expected license plate format
+        plate_num = plate_num[:7]
+    if plate_num != "":
         print("License Plate # : ", plate_num)
 
-
-
-        if __name__ == '__main__':
-            with app.app_context():
-                db.session.commit()
-        else:
+        if db_operation_flag:
             with app.app_context():
                 # Check if the plate exists in the VehicleDatabase
                 exists = VehicleDatabase.query.filter_by(num_plate=plate_num).first() is not None
                 print(exists)
-
 
                 if exists:
                     # Query owner of the vehicle
@@ -120,7 +115,7 @@ def recognize_plate(img, coords):
                         if status == 'out' or status is None:
                             # Plate detected and not inside parking
                             if current_slots < max_slots:
-                                record = PlateRecognitionLog(owner_name=owner_name,plate_num=plate_num, in_out='in')
+                                record = PlateRecognitionLog(owner_name=owner_name, plate_num=plate_num, in_out='in')
                                 db.session.add(record)
                                 parking_properties.current_slots_car += 1
                                 print('The plate is detected and will go in')
@@ -304,7 +299,8 @@ def format_boxes(bboxes, image_height, image_width):
         box[0], box[1], box[2], box[3] = xmin, ymin, xmax, ymax
     return bboxes
 
-def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=True, allowed_classes=list(read_class_names(cfg.YOLO.CLASSES).values()), read_plate = False):
+def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=True, allowed_classes=list(read_class_names(cfg.YOLO.CLASSES).values()), read_plate = False, db_operation_flag=False):
+    # Function body
     classes = read_class_names(cfg.YOLO.CLASSES)
     num_classes = len(classes)
     image_h, image_w, _ = image.shape
@@ -329,7 +325,7 @@ def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=Tr
         else:
             if read_plate:
                 height_ratio = int(image_h / 25)
-                plate_number = recognize_plate(image, coor)
+                plate_number = recognize_plate(image, coor, db_operation_flag)
                 if plate_number != None:
                     cv2.putText(image, plate_number, (int(coor[0]), int(coor[1]-height_ratio)), 
                             cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255,255,0), 2)

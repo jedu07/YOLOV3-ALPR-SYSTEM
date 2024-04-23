@@ -7,3 +7,7 @@ matplotlib
 easydict
 pillow
 pytesseract
+flask-bcrypt
+flask
+flask_sqlalchemy
+flask_login

@@ -1,4 +1,4 @@
-name: yolov4-gpu
+name: yolo-ALPR
 
 dependencies:
   - python==3.7
@@ -20,3 +20,5 @@ dependencies:
     - flask
     - flask_sqlalchemy
     - flask_login
+    - pandas
+    - scikit-learn
