@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDIT REGISTRATION</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+body {
+    background-image: url('{{ url_for("static", filename="background.png") }}');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: Arial, sans-serif;
+}
+
+.edit-form {
+    max-width: 400px;
+    margin: 0 auto;
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 5px;
+    background-color: #fff;
+}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-sm-12 edit-form">
+            <h1 class="text-center">EDIT REGISTRATION</h1>
+            <form action="{{ request.path }}" method="post">
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" class="form-control" placeholder="Enter name" value="{{ vehicle.name }}">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="text" id="email" name="email" class="form-control" placeholder="Enter email" value="{{ vehicle.email }}">
+                </div>
+                <div class="form-group">
+                    <label for="plate">Plate Number:</label>
+                    <input type="text" id="plate" name="plate" class="form-control" placeholder="Enter plate number" value="{{ vehicle.num_plate }}">
+                </div>
+                <div class="form-group">
+                    <label>Vehicle Type:</label><br>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="vehicle_01" name="vehicle_type" value="motor" {% if vehicle.type == 'motor' %}checked{% endif %}>
+                        <label class="form-check-label" for="vehicle_01">Motorcycle</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="vehicle_02" name="vehicle_type" value="car" {% if vehicle.type == 'car' %}checked{% endif %}>
+                        <label class="form-check-label" for="vehicle_02">Car</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Identity Type:</label><br>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="student" name="identity_type" value="student" {% if vehicle.identity == 'student' %}checked{% endif %}>
+                        <label class="form-check-label" for="student">Student</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" id="faculty" name="identity_type" value="faculty" {% if vehicle.identity == 'faculty' %}checked{% endif %}>
+                        <label class="form-check-label" for="faculty">Faculty</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">UPDATE</button>
+            </form>
+            {% for category, message in get_flashed_messages(with_categories=true) %}
+                <div class="alert alert-danger mt-3" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
