@@ -6,12 +6,21 @@
     <title>GATEPASS MANAGEMENT</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
+body {
+    background-image: url('{{ url_for("static", filename="background.png") }}');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center; /* center the background image */
+    height: 100vh; /* make the background image full screen */
+    font-family: Arial, sans-serif;
+}
         .container {
             margin-top: 100px;
             max-width: 400px;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         .form-group {
             margin-bottom: 20px;

@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import login_user, login_required, logout_user, current_user, UserMixin, LoginManager
 from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import jsonify
 
 app = Flask(__name__)
 
@@ -129,20 +130,7 @@ def list_authors():
     return render_template('list_authors.html', authors=authors, user=current_user)
 
 
-@app.route('/add', methods=['GET', 'POST'])
-@login_required
-def add_authors():
-    if request.method == 'POST':
-        if not request.form['user'] or not request.form['password']:
-            flash('please enter all the fields', 'error')
-        else:
-            adminUser = Admin(request.form['user'], password=generate_password_hash(request.form['password']))
 
-            db.session.add(adminUser)
-            db.session.commit()
-            flash('all goods')
-            return redirect(url_for('dashboard'))
-    return render_template('add.html')
 
 
 @app.route('/registration', methods=['GET', 'POST'])
@@ -161,6 +149,45 @@ def add_plate():
             flash('all goods')
             return redirect(url_for('dashboard'))
     return render_template('registration.html')
+
+
+# Route to edit a registered vehicle
+
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
+##@login_required
+def edit_plate(id):
+    vehicle = VehicleDatabase.query.get_or_404(id)  # Get vehicle by ID or return 404 error
+
+    if request.method == 'POST':
+        if not request.form['name'] or not request.form['email'] or not request.form['plate'] or not request.form['vehicle_type'] or not request.form['identity_type']:
+            flash('Please enter all the fields', 'error')
+        else:
+            vehicle.name = request.form['name']
+            vehicle.email = request.form['email']
+            vehicle.num_plate = request.form['plate']
+            vehicle.type = request.form['vehicle_type']
+            vehicle.identity = request.form['identity_type']
+
+            db.session.commit()
+            flash('Vehicle details updated successfully!', 'success')
+            return redirect(url_for('dashboard'))
+
+    return render_template('edit.html', vehicle=vehicle)
+
+
+
+@app.route('/delete/<int:id>', methods=['POST'])
+##@login_required
+def delete_plate(id):
+    try:
+        vehicle = VehicleDatabase.query.get_or_404(id)
+        db.session.delete(vehicle)
+        db.session.commit()
+        return jsonify({"status": "success", "message": "Plate number deleted successfully."})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": "Error deleting plate number."})
+
 
 
 @app.route('/dashboard', methods=['GET', 'POST'])

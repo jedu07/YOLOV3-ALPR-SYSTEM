@@ -6,41 +6,67 @@
     <title>Dashboard</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+
     <style>
-        body {
-            background-color: #f8f9fa;
-            font-family: Arial, sans-serif;
-        }
+
+
+body {
+    background-image: url('{{ url_for("static", filename="background.png") }}');
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center; /* center the background image */
+    height: 100vh; /* make the background image full screen */
+    font-family: Arial, sans-serif;
+}
         .container {
             margin-top: 50px;
             display: flex;
         }
-        .sidebar {
-            width: 200px;
-            padding: 10px;
-            background-color: #f0f0f0;
-        }
-        .tabs {
-            margin-bottom: 10px;
-            margin-left: 0; /* Change to align tabs to the very outer left */
-        }
-        .tabs a {
-            display: block;
-            margin-bottom: 20px;
-            color: #007bff;
-            text-decoration: none;
-        }
-        .tabs a:hover {
-            text-decoration: underline;
-        }
-        .content {
-            flex: 1;
-            border: 10px solid #ccc;
-            border-radius: 5px;
-            padding: 20px;
-            background-color: #fff;
-            position: relative;
-        }
+.sidebar {
+    width: 200px;
+    padding: 20px 10px;
+    background-color: #f5f5f5;
+    border-right: 1px solid #ccc;
+}
+
+
+.tabs {
+    margin-bottom: 10px;
+    margin-left: 0;
+    border-bottom: 1px solid #ccc;
+}
+
+.tabs a {
+    display: block;
+    margin-bottom: 20px;
+    color: #007bff;
+    text-decoration: none;
+    padding: 10px;
+    border-right: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+}
+
+.tabs a:first-child {
+    border-left: none;
+}
+
+.tabs a:last-child {
+    border-right: none;
+}
+
+.tabs a:hover,
+.tabs a.active {
+    background-color: #dddddd;
+}
+.content {
+    flex: 1;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    background-color: #fff;
+    position: relative;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
         .parking-status {
             position: absolute;
             top: 20px;
@@ -88,7 +114,7 @@
                 <p>Motor Slot Status: <span id="motor-slot-status">{{ motor_slots }}</span></p>
             </div>
 
-            <h3>Vehicle Entering Premises</h3>
+            <h3>VEHICLE ENTERING PREMISES</h3>
             <div class="search-container">
                 <!-- Search and show entries functions -->
             </div>
@@ -115,47 +141,50 @@
         </div>
 
         <div id="registered" style="display: none;">
-            <div class="header">
-                <h3>Registered Vehicles</h3>
-                <div class="search-container">
-                    <!-- Search function -->
-                </div>
-                <div class="add-plate-button">
-                    <a href="/registration" class="btn btn-success">Add New Plate Number</a> <!-- Added route to /registration -->
-                </div>
-            </div>
-            <div class="table-container">
-                <table id="registered-table" class="table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Plate Number</th>
-                            <th>Vehicle Type</th>
-                            <th>Identity Type</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for plate in plates %}
-                        <tr>
-                            <td>{{ plate.name }}</td>
-                            <td>{{ plate.email }}</td>
-                            <td>{{ plate.num_plate }}</td>
-                            <td>{{ plate.type }}</td>
-                            <td>{{ plate.identity }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    <div class="header">
+        <h3>Registered Vehicles</h3>
+        <div class="search-container">
+            <!-- Search function -->
         </div>
+        <div class="add-plate-button">
+            <a href="/registration" class="btn btn-success">Add New Plate Number</a> <!-- Added route to /registration -->
+        </div>
+    </div>
+    <div class="table-container">
+        <table id="registered-table" class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Plate Number</th>
+                    <th>Vehicle Type</th>
+                    <th>Identity Type</th>
+                    <th>Action</th> <!-- New column header for edit and delete buttons -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for plate in plates %}
+                <tr>
+                    <td>{{ plate.name }}</td>
+                    <td>{{ plate.email }}</td>
+                    <td>{{ plate.num_plate }}</td>
+                    <td>{{ plate.type }}</td>
+                    <td>{{ plate.identity }}</td>
+                    <td>
+                        <button class="btn btn-primary edit-button" data-id="{{ plate.id }}">Edit</button> <!-- Edit button -->
+                        <button class="btn btn-danger delete-button" data-id="{{ plate.id }}">Delete</button> <!-- Delete button -->
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 <script>
-    $(document).ready(function() {
+      $(document).ready(function() {
         $('#registered-table').DataTable();
         $('#entering-premises-table').DataTable();
 
@@ -168,6 +197,42 @@
             $(tabId).show();
             return false;
         });
+
+  // Edit button click handler
+$('.edit-button').click(function() {
+    var plateId = $(this).data('id');
+    // Redirect to edit page with plateId
+    window.location.href = '/edit/' + plateId; // Adjust the route as per your backend
+});
+
+
+// Delete button click handler
+$('.delete-button').click(function() {
+    var plateId = $(this).data('id');
+    // Implement delete logic here
+    if (confirm("Are you sure you want to delete this plate number?")) {
+        $.ajax({
+            url: '/delete/' + plateId,
+            method: 'POST',
+            success: function(response) {
+                // Check the status of the response
+                if (response.status === 'success') {
+                    alert(response.message);
+                    // Reload the table or update it as needed
+                    $('#registered-table').DataTable().ajax.reload();
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function(error) {
+                // Handle error
+                alert('Error deleting plate number.');
+            }
+        });
+    }
+});
+
+
     });
 </script>
 
