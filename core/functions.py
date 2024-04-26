@@ -80,7 +80,7 @@ def ocr(img, data):
         blur = cv2.resize(blur, None, fx = 2, fy = 2, interpolation = cv2.INTER_CUBIC)
         # run tesseract and convert image text to string
         try:
-            text = pytesseract.image_to_string(blur, config='--psm 5 --oem 3')
+            text = pytesseract.image_to_string(blur, config='--psm 5 --oem 3 -l eng')
             print("Class: {}, Text Extracted: {}".format(class_name, text))
         except: 
             text = None

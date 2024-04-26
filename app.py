@@ -4,6 +4,7 @@ from flask_login import login_user, login_required, logout_user, current_user, U
 from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import jsonify
+from sqlalchemy import desc
 
 app = Flask(__name__)
 
@@ -64,13 +65,14 @@ class VehicleDatabase(db.Model):
     num_plate = db.Column(db.String(100), nullable=False, unique=True)
     type = db.Column(db.String(100), nullable=False, default="")
     identity = db.Column(db.String(100), nullable=False, default="")
-
-    def __init__(self, name, email, num_plate, type, identity):
+    status = db.Column(db.String(100), nullable=True, default="0")
+    def __init__(self, name, email, num_plate, type, identity, status):
         self.name = name
         self.email = email
         self.num_plate = num_plate
         self.type = type
         self.identity = identity
+        self.status = status
 
     def __repr__(self):
         return '<Vehicle_DB %r' % self.id
@@ -134,7 +136,7 @@ def list_authors():
 
 
 @app.route('/registration', methods=['GET', 'POST'])
-@login_required
+#@login_required
 def add_plate():
     if request.method == 'POST':
         if not request.form['name'] or not request.form['email'] or not request.form['plate'] or not request.form[
@@ -142,7 +144,7 @@ def add_plate():
             flash('please enter all the fields', 'error')
         else:
             newPlate = VehicleDatabase(request.form['name'], request.form['email'], request.form['plate'],
-                                       request.form['vehicle_type'], request.form['identity_type'])
+                                       request.form['vehicle_type'], request.form['identity_type'], '0')
 
             db.session.add(newPlate)
             db.session.commit()
@@ -190,18 +192,34 @@ def delete_plate(id):
 
 
 
+from sqlalchemy import desc, func
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
-    # Get vehicle entering premises data
-    entries = PlateRecognitionLog.query.all()
+    # Get the latest unique entry based on plate_num
+    subquery = db.session.query(func.max(PlateRecognitionLog.id).label('max_id')).group_by(PlateRecognitionLog.plate_num).subquery()
+
+    latest_entries = db.session.query(PlateRecognitionLog).filter(
+        PlateRecognitionLog.id.in_(subquery)
+    ).join(VehicleDatabase).filter(
+        VehicleDatabase.status == '1'
+    ).order_by(desc(PlateRecognitionLog.date)).all()
+
+    # Convert the query result to a list
+    entries = [entry for entry in latest_entries]
 
     # Get current parking slot status
     parking_properties = ParkingProperties.query.first()
     car_slots = f"{parking_properties.current_slots_car}/{parking_properties.max_slots_car}" if parking_properties else "N/A"
     motor_slots = f"{parking_properties.current_slots_motor}/{parking_properties.max_slots_motor}" if parking_properties else "N/A"
 
-    return render_template('dashboard.html', entries=entries, car_slots=car_slots, motor_slots=motor_slots,
-                           plates=VehicleDatabase.query.all())
+    # Fetch all registered vehicles
+    registered_vehicles = VehicleDatabase.query.all()
+
+    return render_template('dashboard.html', entries=entries, car_slots=car_slots, motor_slots=motor_slots, plates=registered_vehicles)
+
+
+
 
 
 if __name__ == '__main__':

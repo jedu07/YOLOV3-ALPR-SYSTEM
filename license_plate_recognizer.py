@@ -38,7 +38,7 @@ plate_num = ""
 for cnt in sorted_contours:
     x,y,w,h = cv2.boundingRect(cnt)
     height, width = im2.shape
-    
+
     # if height of box is not a quarter of total height then skip
     if height / float(h) > 6: continue
     ratio = h / float(w)
@@ -56,7 +56,7 @@ for cnt in sorted_contours:
     roi = cv2.medianBlur(roi, 5)
     #cv2.imshow("ROI", roi)
     #cv2.waitKey(0)
-    text = pytesseract.image_to_string(roi, config='-c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 8 --oem 3')
+    text = pytesseract.image_to_string(roi, config='-c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 8 --oem 3 -l eng')
     #print(text)
     plate_num += text
 print(plate_num)
