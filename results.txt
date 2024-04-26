@@ -1,0 +1,28 @@
+Image: 1.jpg
+
+Image: 1.jpg
+
+Image: 1.jpg
+
+Image: 1.jpg
+
+Image: 1.jpg
+Confidence: 1.0
+BBox Coords: ()
+
+Image: 1.jpg
+Confidence: 1.0
+BBox Coords: ()
+
+Image: 1.jpg
+Confidence: 1.0
+BBox Coords: ()
+
+Image: 1.jpg
+Confidence: 1.0
+BBox Coords: (672.0, 729.0, 930.0, 857.0)
+
+Image: 1.jpg
+1.0
+(672.0, 729.0, 930.0, 857.0)
+
