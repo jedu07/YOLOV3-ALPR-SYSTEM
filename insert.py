@@ -1,7 +1,7 @@
-from app import ParkingProperties, db, app,VehicleDatabase, PlateRecognitionLog
+from app import ParkingProperties, db, app,VehicleDatabase, PlateRecognitionLog, Admin
 
 #donna = VehicleDatabase('jed', '20@gmailc','STA5131E','car','student')
-donna = ParkingProperties('san isidro', 20,20,0,0)
+donna = Admin('admin','admin1234')
 
 
 if __name__ == '__main__':

@@ -1,7 +1,5 @@
 import os
 
-# Import database-related functions if needed
-
 # comment out below line to enable tensorflow outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
@@ -21,14 +19,16 @@ import cv2
 import numpy as np
 from tensorflow.compat.v1 import ConfigProto
 from tensorflow.compat.v1 import InteractiveSession
+from license_plate_recognizer import recognize_license_plate
+
 
 flags.DEFINE_string('framework', 'tf', '(tf, tflite, trt')
-flags.DEFINE_string('weights', './checkpoints/yolov4-416',
+flags.DEFINE_string('weights', './checkpoints/yolov3-416',
                     'path to weights file')
 flags.DEFINE_integer('size', 416, 'resize images to')
 flags.DEFINE_boolean('tiny', False, 'yolo or yolo-tiny')
-flags.DEFINE_string('model', 'yolov4', 'yolov3 or yolov4')
-flags.DEFINE_string('video', '0', 'path to input video or set to 0 for webcam')
+flags.DEFINE_string('model', 'yolov3', 'yolov3')
+flags.DEFINE_string('video', './data/video/video.mp4', 'path to input video or set to 0 for webcam')
 flags.DEFINE_string('output', None, 'path to output video')
 flags.DEFINE_string('output_format', 'XVID', 'codec used in VideoWriter when saving video to file')
 flags.DEFINE_float('iou', 0.45, 'iou threshold')
@@ -38,18 +38,9 @@ flags.DEFINE_boolean('dont_show', False, 'dont show video output')
 flags.DEFINE_boolean('info', False, 'print info on detections')
 flags.DEFINE_boolean('crop', False, 'crop detections from images')
 flags.DEFINE_boolean('plate', False, 'perform license plate recognition')
-# Add database flag
-flags.DEFINE_boolean('database', False, 'database')
-
 
 
 def main(_argv):
-
-
-    total_fps = 0.0  # Initialize total FPS
-    frame_count = 0  # Initialize frame count
-    start_time = time.time()
-
     config = ConfigProto()
     config.gpu_options.allow_growth = True
     session = InteractiveSession(config=config)
@@ -77,11 +68,6 @@ def main(_argv):
         vid = cv2.VideoCapture(video_path)
 
     out = None
-
-    if FLAGS.database:
-        db_operation_flag = True
-    else:
-        db_operation_flag = False
 
     if FLAGS.output:
         # by default VideoCapture returns float instead of int
@@ -152,19 +138,23 @@ def main(_argv):
 
         # if crop flag is enabled, crop each detection and save it as new image
         if FLAGS.crop:
-            crop_rate = 150  # capture images every so many frames (ex. crop photos every 150 frames)
+            crop_rate = 25  # capture images every so many frames (ex. crop photos every 150 frames)
             crop_path = os.path.join(os.getcwd(), 'detections', 'crop', video_name)
             try:
                 os.mkdir(crop_path)
             except FileExistsError:
                 pass
             if frame_num % crop_rate == 0:
-                final_path = os.path.join(crop_path, 'frame_' + str(frame_num))
+                final_path = os.path.join(crop_path)
                 try:
                     os.mkdir(final_path)
                 except FileExistsError:
                     pass
                 crop_objects(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), pred_bbox, final_path, allowed_classes)
+
+                # Check if any objects were cropped before calling recognize_license_plate()
+                if len(os.listdir(final_path)) > 0:
+                    recognize_license_plate()
             else:
                 pass
 
@@ -175,20 +165,13 @@ def main(_argv):
             for key, value in counted_classes.items():
                 print("Number of {}s: {}".format(key, value))
             image = utils.draw_bbox(frame, pred_bbox, FLAGS.info, counted_classes, allowed_classes=allowed_classes,
-                                    read_plate=FLAGS.plate, db_operation_flag=True)
+                                    read_plate=FLAGS.plate)
         else:
             image = utils.draw_bbox(frame, pred_bbox, FLAGS.info, allowed_classes=allowed_classes,
                                     read_plate=FLAGS.plate)
 
-        end_time = time.time()
-        latency = end_time - start_time  # Calculate latency for each frame
-        fps = 1.0 / latency if latency > 0 else 0  # Calculate FPS for each frame
-
-        total_fps += fps  # Add FPS to total
-        frame_count += 1  # Increment frame count
-
+        fps = 1.0 / (time.time() - start_time)
         print("FPS: %.2f" % fps)
-
         result = np.asarray(image)
         cv2.namedWindow("result", cv2.WINDOW_AUTOSIZE)
         result = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
@@ -199,14 +182,7 @@ def main(_argv):
         if FLAGS.output:
             out.write(result)
         if cv2.waitKey(1) & 0xFF == ord('q'): break
-
-
-
-    average_fps = total_fps / frame_count if frame_count > 0 else 0  # Calculate average FPS
-    print(f"Average FPS: {average_fps:.2f}")
-
     cv2.destroyAllWindows()
-
 
 
 if __name__ == '__main__':

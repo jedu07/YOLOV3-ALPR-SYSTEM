@@ -6,22 +6,13 @@ import tensorflow as tf
 import pytesseract
 from core.config import cfg
 import re
-import time
-from app import VehicleDatabase, db, app, PlateRecognitionLog, ParkingProperties
-import matplotlib.pyplot as plt
 
-
-
-total_latency = 0  # Initialize total latency
 # If you don't have tesseract executable in your PATH, include the following:
 # pytesseract.pytesseract.tesseract_cmd = r'<full_path_to_your_tesseract_executable>'
 # Example tesseract_cmd = r'C:\Program Files (x86)\Tesseract-OCR\tesseract'
 
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract'
 # function to recognize license plate numbers using Tesseract OCR
-def recognize_plate(img, coords, db_operation_flag):
-    # Function body
-
+def recognize_plate(img, coords):
     # separate coordinates from box
     xmin, ymin, xmax, ymax = coords
     # get the subimage that makes up the bounded region and take an additional 5 pixels on each side
@@ -61,10 +52,11 @@ def recognize_plate(img, coords, db_operation_flag):
         height, width = im2.shape
         # if height of box is not tall enough relative to total height then skip
         if height / float(h) > 6: continue
-
+        ratio = h / float(w)
+        # if height to width ratio is less than 1.5 skip
+        if ratio < 1.5: continue
         # if width is not wide enough relative to total width then skip
         if width / float(w) > 15: continue
-
         area = h * w
         # if area is less than 100 pixels skip
         if area < 100: continue
@@ -84,117 +76,9 @@ def recognize_plate(img, coords, db_operation_flag):
             plate_num += clean_text
         except:
             text = None
-
-        # Keep only the first 7 characters to match the expected license plate format
-        plate_num = plate_num[:7]
-    if plate_num != "":
-        print("License Plate # : ", plate_num)
-
-        if db_operation_flag:
-            with app.app_context():
-                # Check if the plate exists in the VehicleDatabase
-                exists = VehicleDatabase.query.filter_by(num_plate=plate_num).first() is not None
-                print(exists)
-
-                if exists:
-                    # Query owner of the vehicle
-                    query_database = VehicleDatabase.query.filter_by(num_plate=plate_num).first()
-                    owner_name = query_database.name
-
-                    # Get the vehicle type
-                    vehicle_type = VehicleDatabase.query.filter_by(num_plate=plate_num).first().type
-
-                    # Get the latest status of the plate (in or out of the parking)
-                    latest_status = PlateRecognitionLog.query.filter_by(plate_num=plate_num).order_by(
-                        PlateRecognitionLog.id.desc()).first()
-                    status = latest_status.in_out if latest_status else None
-
-                    if vehicle_type == 'car':
-                        # Get the current and max slots for cars
-                        parking_properties = ParkingProperties.query.first()
-                        current_slots = parking_properties.current_slots_car
-                        max_slots = parking_properties.max_slots_car
-
-                        if status == 'out' or status is None:
-                            # Plate detected and not inside parking
-                            if current_slots < max_slots:
-                                record = PlateRecognitionLog(owner_name=owner_name, plate_num=plate_num, in_out='in')
-                                db.session.add(record)
-
-                                # Update VehicleDatabase status to '1' (In)
-                                vehicle = VehicleDatabase.query.filter_by(num_plate=plate_num).first()
-                                if vehicle:
-                                    vehicle.status = '1'
-
-                                parking_properties.current_slots_car += 1
-                                print('The plate is detected and will go in')
-                                cv2.waitKey(5000)
-
-                        elif status == 'in':
-                            # Plate detected and is inside the parking
-                            record = PlateRecognitionLog(owner_name=owner_name, plate_num=plate_num, in_out='out')
-                            db.session.add(record)
-
-                            # Update VehicleDatabase status to '0' (Out)
-                            vehicle = VehicleDatabase.query.filter_by(num_plate=plate_num).first()
-                            if vehicle:
-                                vehicle.status = '0'
-
-                            parking_properties.current_slots_car -= 1
-                            print('The plate is valid and will go out')
-                            cv2.waitKey(5000)
-                        else:
-                            print('Invalid plate status')
-
-
-                    elif vehicle_type == 'motor':
-                        # Get the current and max slots for cars
-                        parking_properties = ParkingProperties.query.first()
-                        current_slots = parking_properties.current_slots_car
-                        max_slots = parking_properties.max_slots_car
-
-                        if status == 'out' or status is None:
-                            # Plate detected and not inside parking
-                            if current_slots < max_slots:
-                                record = PlateRecognitionLog(owner_name=owner_name, plate_num=plate_num, in_out='in')
-                                db.session.add(record)
-
-                                # Update VehicleDatabase status to '1' (In)
-                                vehicle = VehicleDatabase.query.filter_by(num_plate=plate_num).first()
-                                if vehicle:
-                                    vehicle.status = '1'
-
-                                parking_properties.current_slots_car += 1
-                                print('The plate is detected and will go in')
-                                cv2.waitKey(5000)
-                            else:
-                                print('Parking is full')
-
-                        elif status == 'in':
-                            # Plate detected and is inside the parking
-                            record = PlateRecognitionLog(owner_name=owner_name, plate_num=plate_num, in_out='out')
-                            db.session.add(record)
-
-                            # Update VehicleDatabase status to '0' (Out)
-                            vehicle = VehicleDatabase.query.filter_by(num_plate=plate_num).first()
-                            if vehicle:
-                                vehicle.status = '0'
-
-                            parking_properties.current_slots_car -= 1
-                            print('The plate is valid and will go out')
-                            cv2.waitKey(5000)
-                        else:
-                            print('Invalid plate status')
-
-
-                    else:
-                        print('Invalid vehicle type')
-
-                    db.session.commit()
-                else:
-                    print('Plate does not exist in the database')
-
-    ##cv2.imshow("Character's Segmented", im2)
+    if plate_num != None:
+        print("License Plate #: ", plate_num)
+    #cv2.imshow("Character's Segmented", im2)
     #cv2.waitKey(0)
     return plate_num
 
@@ -211,7 +95,7 @@ def load_freeze_layer(model='yolov3', tiny=False):
             freeze_layouts = ['conv2d_93', 'conv2d_101', 'conv2d_109']
     return freeze_layouts
 
-def load_weights(model, weights_file, model_name='yolov3', is_tiny=False):
+def load_weights(model, weights_file, model_name='yolov4', is_tiny=False):
     if is_tiny:
         if model_name == 'yolov3':
             layer_size = 13
@@ -326,25 +210,7 @@ def format_boxes(bboxes, image_height, image_width):
         box[0], box[1], box[2], box[3] = xmin, ymin, xmax, ymax
     return bboxes
 
-
-
-total_latency = 0.0  # Initialize total latency
-frame_count = 0  # Initialize frame count
-total_latency = 0.0  # Initialize total latency
-frame_count = 0  # Initialize frame count
-
-# Create lists to store latency values
-latency_values = []
-frame_numbers = []
-
-
-def draw_bbox(image, bboxes, info=False, counted_classes=None, show_label=True,
-              allowed_classes=list(read_class_names(cfg.YOLO.CLASSES).values()), read_plate=False,
-              db_operation_flag=False):
-    global total_latency, frame_count, latency_values, frame_numbers  # Use global variables
-
-    start_time = time.time()
-
+def draw_bbox(image, bboxes, info = False, counted_classes = None, show_label=True, allowed_classes=list(read_class_names(cfg.YOLO.CLASSES).values()), read_plate = False):
     classes = read_class_names(cfg.YOLO.CLASSES)
     num_classes = len(classes)
     image_h, image_w, _ = image.shape
@@ -357,27 +223,22 @@ def draw_bbox(image, bboxes, info=False, counted_classes=None, show_label=True,
     random.seed(None)
 
     out_boxes, out_scores, out_classes, num_boxes = bboxes
-
     for i in range(num_boxes):
-        if int(out_classes[i]) < 0 or int(out_classes[i]) > num_classes:
-            continue
+        if int(out_classes[i]) < 0 or int(out_classes[i]) > num_classes: continue
         coor = out_boxes[i]
         fontScale = 0.5
         score = out_scores[i]
         class_ind = int(out_classes[i])
         class_name = classes[class_ind]
-
         if class_name not in allowed_classes:
             continue
-
         else:
             if read_plate:
                 height_ratio = int(image_h / 25)
-                plate_number = recognize_plate(image, coor, db_operation_flag)
-
+                plate_number = recognize_plate(image, coor)
                 if plate_number != None:
-                    cv2.putText(image, plate_number, (int(coor[0]), int(coor[1] - height_ratio)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255, 255, 0), 2)
+                    cv2.putText(image, plate_number, (int(coor[0]), int(coor[1]-height_ratio)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 1.25, (255,255,0), 2)
 
             bbox_color = colors[class_ind]
             bbox_thick = int(0.6 * (image_h + image_w) / 600)
@@ -385,66 +246,25 @@ def draw_bbox(image, bboxes, info=False, counted_classes=None, show_label=True,
             cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
 
             if info:
-                print(
-                    "Object found: {}, Confidence: {:.2f}, BBox Coords (xmin, ymin, xmax, ymax): {}, {}, {}, {} ".format(
-                        class_name, score, coor[0], coor[1], coor[2], coor[3]))
+                print("Object found: {}, Confidence: {:.2f}, BBox Coords (xmin, ymin, xmax, ymax): {}, {}, {}, {} ".format(class_name, score, coor[0], coor[1], coor[2], coor[3]))
 
             if show_label:
                 bbox_mess = '%s: %.2f' % (class_name, score)
                 t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
                 c3 = (c1[0] + t_size[0], c1[1] - t_size[1] - 3)
-                cv2.rectangle(image, c1, (np.float32(c3[0]), np.float32(c3[1])), bbox_color, -1)
+                cv2.rectangle(image, c1, (np.float32(c3[0]), np.float32(c3[1])), bbox_color, -1) #filled
+
                 cv2.putText(image, bbox_mess, (c1[0], np.float32(c1[1] - 2)), cv2.FONT_HERSHEY_SIMPLEX,
-                            fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
+                        fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
 
             if counted_classes != None:
                 height_ratio = int(image_h / 25)
                 offset = 15
                 for key, value in counted_classes.items():
                     cv2.putText(image, "{}s detected: {}".format(key, value), (5, offset),
-                                cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 2)
+                            cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 255, 0), 2)
                     offset += height_ratio
-
-            end_time = time.time()
-            latency = end_time - start_time  # Calculate latency for each frame
-            total_latency += latency  # Add latency to total
-            frame_count += 1  # Increment frame count
-
-            latency_values.append(latency)
-            frame_numbers.append(frame_count)
-            ##print("Latency: %.5f seconds" % latency)
-
-        average_latency = total_latency / frame_count if frame_count > 0 else 0
-
-        with open('latency_analysis.txt', 'a') as f:
-            f.write(f"{frame_count},{average_latency}\n")
-
-    average_latency = total_latency / frame_count if frame_count > 0 else 0  # Calculate average latency
-    #print(f"Average Latency: {average_latency:.5f} seconds")
-
     return image
-
-
-
-def plot_latency_from_file(file_path='latency_analysis.txt'):
-    frame_numbers, latency_values = np.loadtxt(file_path, delimiter=',', unpack=True)
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(frame_numbers, latency_values, marker='o', color='b', label='Latency (seconds)')
-    plt.axhline(y=np.mean(latency_values), color='r', linestyle='--', label='Average Latency')
-
-    plt.title('Latency Analysis')
-    plt.xlabel('Frame Number')
-    plt.ylabel('Latency (seconds)')
-    plt.legend()
-    plt.grid(True)
-    plt.tight_layout()
-
-    plt.show()
-
-    # You can also return the average latency if needed
-    return np.mean(latency_values)
-
 
 def bbox_iou(bboxes1, bboxes2):
     """
@@ -656,4 +476,3 @@ def unfreeze_all(model, frozen=False):
     if isinstance(model, tf.keras.Model):
         for l in model.layers:
             unfreeze_all(l, frozen)
-

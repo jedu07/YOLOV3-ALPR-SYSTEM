@@ -5,6 +5,7 @@ from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import jsonify
 from sqlalchemy import desc
+import subprocess
 
 app = Flask(__name__)
 
@@ -134,7 +135,6 @@ def list_authors():
 
 
 
-
 @app.route('/registration', methods=['GET', 'POST'])
 #@login_required
 def add_plate():
@@ -220,7 +220,56 @@ def dashboard():
 
 
 
+# Route to edit admin details and parking properties
+from flask_login import current_user
 
+@app.route('/edit_admin', methods=['GET', 'POST'])
+#@login_required
+def edit_admin():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))  # Redirect to the login page if the user is not authenticated
+
+    admin = Admin.query.filter_by(id=current_user.id).first()  # Get the currently logged-in admin
+
+    if request.method == 'POST':
+        # Get data from the form
+        admin_name = request.form.get('name')
+        password = request.form.get('password')
+        parking_name = request.form.get('parking_name')
+        max_slots_car = request.form.get('max_slots_car')
+        max_slots_motor = request.form.get('max_slots_motor')
+
+        # Update admin details and parking properties
+        admin.user_name = admin_name
+        admin.password = generate_password_hash(password)  # Hash the password before saving
+        parking_properties = ParkingProperties.query.first()
+        if parking_properties:
+            parking_properties.parking_name = parking_name
+            parking_properties.max_slots_car = max_slots_car
+            parking_properties.max_slots_motor = max_slots_motor
+        else:
+            parking_properties = ParkingProperties(parking_name=parking_name, max_slots_car=max_slots_car,
+                                                   max_slots_motor=max_slots_motor, current_slots_car=0,
+                                                   current_slots_motor=0)
+            db.session.add(parking_properties)
+
+        db.session.commit()
+        flash('Admin details and parking properties updated successfully!', 'success')
+        return redirect(url_for('edit_admin'))  # Redirect to the same page to show updated details
+
+    # Pass admin and parking properties data to the template
+    parking_properties = ParkingProperties.query.first()
+    return render_template('edit_admin.html', admin=admin, parking_properties=parking_properties)
+
+
+@app.route('/start_video_detection', methods=['GET'])
+def start_video_detection():
+    try:
+        # Execute the Python command to start video detection
+        process = subprocess.Popen(['python', 'detect_video.py', '--weights', './checkpoints/yolov3-custom-416', '--size', '416', '--model', 'yolov3', '--video', '0', '--crop'])
+        return jsonify({"status": "success", "message": "Video detection started."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
 if __name__ == '__main__':
     with app.app_context():

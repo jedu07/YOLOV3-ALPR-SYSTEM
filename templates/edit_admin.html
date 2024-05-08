@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EDIT REGISTRATION</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-image: url('{{ url_for("static", filename="background.png") }}');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .edit-form {
+            max-width: 400px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-sm-12 edit-form">
+            <h1 class="text-center">EDIT REGISTRATION</h1>
+            <form action="{{ request.path }}" method="post">
+                <div class="form-group">
+                    <label for="name">Admin Name:</label>
+                    <input type="text" id="name" name="name" class="form-control" placeholder="Enter admin name" value="{{ admin.user_name }}">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" value="{{ admin.password }}">
+                </div>
+                <div class="form-group">
+                    <label for="parking_name">Parking Name:</label>
+                    <input type="text" id="parking_name" name="parking_name" class="form-control" placeholder="Enter parking name" value="{{ parking_properties.parking_name }}">
+                </div>
+                <div class="form-group">
+                    <label for="max_slots_car">Max Car Slots:</label>
+                    <input type="number" id="max_slots_car" name="max_slots_car" class="form-control" placeholder="Enter max car slots" value="{{ parking_properties.max_slots_car }}">
+                </div>
+                <div class="form-group">
+                    <label for="max_slots_motor">Max Motor Slots:</label>
+                    <input type="number" id="max_slots_motor" name="max_slots_motor" class="form-control" placeholder="Enter max motor slots" value="{{ parking_properties.max_slots_motor }}">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">UPDATE</button>
+            </form>
+            {% for category, message in get_flashed_messages(with_categories=true) %}
+                <div class="alert alert-danger mt-3" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+            <!-- Back button -->
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-block mt-3">Back</a>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

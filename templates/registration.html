@@ -6,26 +6,26 @@
     <title>REGISTRATION</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-body {
-    background-image: url('{{ url_for("static", filename="background.png") }}');
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    font-family: Arial, sans-serif;
-}
+        body {
+            background-image: url('{{ url_for("static", filename="background.png") }}');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
 
-.registration-form {
-    max-width: 400px;
-    margin: 0 auto;
-    border: 1px solid #ccc;
-    padding: 20px;
-    border-radius: 5px;
-    background-color: #fff;
-}
+        .registration-form {
+            max-width: 400px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -66,7 +66,7 @@ body {
                     </div>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="radio" id="faculty" name="identity_type" value="faculty">
-                <label class="form-check-label" for="faculty">Faculty</label>
+                        <label class="form-check-label" for="faculty">Faculty</label>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary btn-block">REGISTER</button>
@@ -76,6 +76,8 @@ body {
                     {{ message }}
                 </div>
             {% endfor %}
+            <!-- Back button -->
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-block mt-3">Back</a>
         </div>
     </div>
 </div>
