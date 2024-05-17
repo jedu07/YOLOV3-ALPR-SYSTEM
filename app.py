@@ -1,9 +1,8 @@
-from flask import Flask, request, flash, url_for, redirect, render_template
+from flask import Flask, request, flash, url_for, redirect, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import login_user, login_required, logout_user, current_user, UserMixin, LoginManager
 from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import jsonify
 from sqlalchemy import desc
 import subprocess
 
@@ -67,6 +66,7 @@ class VehicleDatabase(db.Model):
     type = db.Column(db.String(100), nullable=False, default="")
     identity = db.Column(db.String(100), nullable=False, default="")
     status = db.Column(db.String(100), nullable=True, default="0")
+
     def __init__(self, name, email, num_plate, type, identity, status):
         self.name = name
         self.email = email
@@ -133,10 +133,7 @@ def list_authors():
     return render_template('list_authors.html', authors=authors, user=current_user)
 
 
-
-
 @app.route('/registration', methods=['GET', 'POST'])
-#@login_required
 def add_plate():
     if request.method == 'POST':
         if not request.form['name'] or not request.form['email'] or not request.form['plate'] or not request.form[
@@ -153,12 +150,9 @@ def add_plate():
     return render_template('registration.html')
 
 
-# Route to edit a registered vehicle
-
 @app.route('/edit/<int:id>', methods=['GET', 'POST'])
-##@login_required
 def edit_plate(id):
-    vehicle = VehicleDatabase.query.get_or_404(id)  # Get vehicle by ID or return 404 error
+    vehicle = VehicleDatabase.query.get_or_404(id)
 
     if request.method == 'POST':
         if not request.form['name'] or not request.form['email'] or not request.form['plate'] or not request.form['vehicle_type'] or not request.form['identity_type']:
@@ -177,9 +171,7 @@ def edit_plate(id):
     return render_template('edit.html', vehicle=vehicle)
 
 
-
 @app.route('/delete/<int:id>', methods=['POST'])
-##@login_required
 def delete_plate(id):
     try:
         vehicle = VehicleDatabase.query.get_or_404(id)
@@ -191,12 +183,8 @@ def delete_plate(id):
         return jsonify({"status": "error", "message": "Error deleting plate number."})
 
 
-
-from sqlalchemy import desc, func
-
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
-    # Get the latest unique entry based on plate_num
     subquery = db.session.query(func.max(PlateRecognitionLog.id).label('max_id')).group_by(PlateRecognitionLog.plate_num).subquery()
 
     latest_entries = db.session.query(PlateRecognitionLog).filter(
@@ -205,43 +193,33 @@ def dashboard():
         VehicleDatabase.status == '1'
     ).order_by(desc(PlateRecognitionLog.date)).all()
 
-    # Convert the query result to a list
     entries = [entry for entry in latest_entries]
 
-    # Get current parking slot status
     parking_properties = ParkingProperties.query.first()
     car_slots = f"{parking_properties.current_slots_car}/{parking_properties.max_slots_car}" if parking_properties else "N/A"
     motor_slots = f"{parking_properties.current_slots_motor}/{parking_properties.max_slots_motor}" if parking_properties else "N/A"
 
-    # Fetch all registered vehicles
     registered_vehicles = VehicleDatabase.query.all()
 
     return render_template('dashboard.html', entries=entries, car_slots=car_slots, motor_slots=motor_slots, plates=registered_vehicles)
 
 
-
-# Route to edit admin details and parking properties
-from flask_login import current_user
-
 @app.route('/edit_admin', methods=['GET', 'POST'])
-#@login_required
 def edit_admin():
     if not current_user.is_authenticated:
-        return redirect(url_for('login'))  # Redirect to the login page if the user is not authenticated
+        return redirect(url_for('login'))
 
-    admin = Admin.query.filter_by(id=current_user.id).first()  # Get the currently logged-in admin
+    admin = Admin.query.filter_by(id=current_user.id).first()
 
     if request.method == 'POST':
-        # Get data from the form
         admin_name = request.form.get('name')
         password = request.form.get('password')
         parking_name = request.form.get('parking_name')
         max_slots_car = request.form.get('max_slots_car')
         max_slots_motor = request.form.get('max_slots_motor')
 
-        # Update admin details and parking properties
         admin.user_name = admin_name
-        admin.password = generate_password_hash(password)  # Hash the password before saving
+        admin.password = generate_password_hash(password)
         parking_properties = ParkingProperties.query.first()
         if parking_properties:
             parking_properties.parking_name = parking_name
@@ -255,25 +233,64 @@ def edit_admin():
 
         db.session.commit()
         flash('Admin details and parking properties updated successfully!', 'success')
-        return redirect(url_for('edit_admin'))  # Redirect to the same page to show updated details
+        return redirect(url_for('edit_admin'))
 
-    # Pass admin and parking properties data to the template
     parking_properties = ParkingProperties.query.first()
     return render_template('edit_admin.html', admin=admin, parking_properties=parking_properties)
 
 
 @app.route('/start_video_detection', methods=['GET'])
 def start_video_detection():
-    try:
-        # Execute the Python command to start video detection
-        process = subprocess.Popen(['python', 'detect_video.py', '--weights', './checkpoints/yolov3-custom-416', '--size', '416', '--model', 'yolov3', '--video', '0', '--crop'])
-        return jsonify({"status": "success", "message": "Video detection started."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    video_path = './data/video/video.mp4'
+    weights_path = './checkpoints/yolov3-416'
+    command = [
+        'python', 'detect.py',
+        '--video', video_path,
+        '--video2', video_path,
+        '--weights', weights_path,
+        '--size', '416',
+        '--plate',  # Add this flag to enable license plate recognition
+        '--campus_count',
+    ]
 
-if __name__ == '__main__':
+    subprocess.Popen(command)
+    return jsonify({'status': 'Video detection started'})
+
+
+@app.route('/current_car_count', methods=['GET'])
+def current_car_count():
+    parking_properties = ParkingProperties.query.first()
+    car_count = parking_properties.current_slots_car if parking_properties else 0
+    return jsonify({'current_car_count': car_count})
+
+
+@app.route('/get_latest_data')
+def get_latest_data():
+    latest_entries = PlateRecognitionLog.query.order_by(PlateRecognitionLog.date.desc()).limit(10).all()
+    plates = VehicleDatabase.query.all()
+    records = PlateRecognitionLog.query.all()
+
+    entries = [
+        {"name": entry.owner_name, "plate_number": entry.plate_num, "date": entry.date.strftime("%I:%M %p")}
+        for entry in latest_entries
+    ]
+    plates_data = [
+        {"name": plate.name, "email": plate.email, "plate_number": plate.num_plate, "vehicle_type": plate.type, "identity_type": plate.identity}
+        for plate in plates
+    ]
+    records_data = [
+        {"owner_name": record.owner_name, "plate_number": record.plate_num, "in_out": record.in_out, "date": record.date.strftime("%Y-%m-%d %H:%M:%S")}
+        for record in records
+    ]
+
+    return jsonify({"entries": entries, "plates": plates_data, "records": records_data})
+
+
+
+
+
+
+if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-        db.session.commit()
-
     app.run(debug=True)

@@ -33,39 +33,69 @@
     <div class="row">
         <div class="col-lg-8 offset-lg-2 col-md-10 offset-md-1 col-sm-12 edit-form">
             <h1 class="text-center">EDIT REGISTRATION</h1>
-            <form action="{{ request.path }}" method="post">
-                <div class="form-group">
-                    <label for="name">Admin Name:</label>
-                    <input type="text" id="name" name="name" class="form-control" placeholder="Enter admin name" value="{{ admin.user_name }}">
+
+            <!-- Nav tabs -->
+            <ul class="nav nav-tabs" id="editTabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="admin-tab" data-toggle="tab" href="#admin" role="tab" aria-controls="admin" aria-selected="true">Admin Details</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="parking-tab" data-toggle="tab" href="#parking" role="tab" aria-controls="parking" aria-selected="false">Parking Details</a>
+                </li>
+            </ul>
+
+            <!-- Tab panes -->
+            <div class="tab-content">
+                <!-- Admin Details Tab -->
+                <div class="tab-pane fade show active" id="admin" role="tabpanel" aria-labelledby="admin-tab">
+                    <form action="{{ request.path }}" method="post">
+                        <div class="form-group">
+                            <label for="name">Admin Name:</label>
+                            <input type="text" id="name" name="name" class="form-control" placeholder="Enter admin name" value="{{ admin.user_name }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" value="{{ admin.password }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">UPDATE</button>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" value="{{ admin.password }}">
+
+                <!-- Parking Details Tab -->
+                <div class="tab-pane fade" id="parking" role="tabpanel" aria-labelledby="parking-tab">
+                    <form action="{{ request.path }}" method="post">
+                        <div class="form-group">
+                            <label for="parking_name">Parking Name:</label>
+                            <input type="text" id="parking_name" name="parking_name" class="form-control" placeholder="Enter parking name" value="{{ parking_properties.parking_name }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="max_slots_car">Max Car Slots:</label>
+                            <input type="number" id="max_slots_car" name="max_slots_car" class="form-control" placeholder="Enter max car slots" value="{{ parking_properties.max_slots_car }}">
+                        </div>
+                        <div class="form-group">
+                            <label for="max_slots_motor">Max Motor Slots:</label>
+                            <input type="number" id="max_slots_motor" name="max_slots_motor" class="form-control" placeholder="Enter max motor slots" value="{{ parking_properties.max_slots_motor }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">UPDATE</button>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label for="parking_name">Parking Name:</label>
-                    <input type="text" id="parking_name" name="parking_name" class="form-control" placeholder="Enter parking name" value="{{ parking_properties.parking_name }}">
-                </div>
-                <div class="form-group">
-                    <label for="max_slots_car">Max Car Slots:</label>
-                    <input type="number" id="max_slots_car" name="max_slots_car" class="form-control" placeholder="Enter max car slots" value="{{ parking_properties.max_slots_car }}">
-                </div>
-                <div class="form-group">
-                    <label for="max_slots_motor">Max Motor Slots:</label>
-                    <input type="number" id="max_slots_motor" name="max_slots_motor" class="form-control" placeholder="Enter max motor slots" value="{{ parking_properties.max_slots_motor }}">
-                </div>
-                <button type="submit" class="btn btn-primary btn-block">UPDATE</button>
-            </form>
+            </div>
+
+            <!-- Flash messages -->
             {% for category, message in get_flashed_messages(with_categories=true) %}
                 <div class="alert alert-danger mt-3" role="alert">
                     {{ message }}
                 </div>
             {% endfor %}
+
             <!-- Back button -->
             <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-block mt-3">Back</a>
         </div>
     </div>
 </div>
 
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>
